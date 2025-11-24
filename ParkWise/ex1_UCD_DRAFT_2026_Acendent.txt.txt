@@ -1,131 +1,72 @@
 @startuml
+left to right direction
+skinparam packageStyle rectangle
 
-' הגדרות עיצוב בסיסיות
-skinparam classAttributeIconSize 0
-skinparam class {
-    BackgroundColor White
-    ArrowColor Black
-    BorderColor Black
+' Actors definitions
+actor "Client" as client
+actor "Administrator" as admin
+actor "Gate Sensor (GS)" as gs
+actor "Conveyors' Controller (CC)" as cc
+actor "Payment Gateway (PG)" as pg
+actor "Integrated Rate Service (IRS)" as irs
+
+rectangle "ParkWise System" {
+
+    ' Administrative Use Cases
+    usecase "Update Parking Lot Details" as UC_UpdateLot
+    usecase "Generate Annual Summary Report" as UC_ReportAnnual
+    usecase "Generate Customer Club Growth Report" as UC_ReportClub
+
+    ' Entry Process
+    usecase "Detect Vehicle Arrival" as UC_DetectArrival
+    usecase "Open Barrier" as UC_OpenBarrier
+    usecase "Register to System" as UC_Register
+    usecase "Upload Vehicle Photos" as UC_UploadPhotos
+    usecase "Extract Vehicle Details" as UC_ExtractDetails
+
+    ' Parking Process
+    usecase "Assign Conveyor & Optimize Location" as UC_Optimize
+    usecase "Park Vehicle" as UC_ParkVehicle
+    usecase "Send Parking SMS" as UC_SMS
+
+    ' Exit & Payment Process
+    usecase "End Parking Session" as UC_EndParking
+    usecase "Calculate Payment" as UC_CalcPay
+    usecase "Process Payment" as UC_ProcessPay
+    usecase "Issue Receipt" as UC_Receipt
+
+    ' Club Management
+    usecase "Register to Club" as UC_JoinClub
+    usecase "Select Preferred Lots" as UC_SelectLots
+    usecase "Update Price Lists" as UC_UpdatePrices
+
+    ' Relationships
+    admin --> UC_UpdateLot
+    admin --> UC_ReportAnnual
+    admin --> UC_ReportClub
+
+    gs --> UC_DetectArrival
+    UC_DetectArrival ..> UC_OpenBarrier : <<include>>
+    UC_DetectArrival <.. UC_Register : <<extend>>
+    
+    client --> UC_Register
+    UC_Register ..> UC_UploadPhotos : <<include>>
+    UC_UploadPhotos ..> UC_ExtractDetails : <<include>>
+    
+    cc --> UC_Optimize
+    cc --> UC_ParkVehicle
+    UC_ParkVehicle ..> UC_SMS : <<include>>
+
+    client --> UC_EndParking
+    UC_EndParking ..> UC_CalcPay : <<include>>
+    UC_EndParking ..> UC_ProcessPay : <<include>>
+    UC_ProcessPay --> pg
+    UC_ProcessPay ..> UC_Receipt : <<extend>>
+    UC_ProcessPay ..> UC_OpenBarrier : <<include>>
+
+    client --> UC_JoinClub
+    client --> UC_SelectLots
+    
+    irs --> UC_UpdatePrices
 }
-
-' רשימות בחירה (Enums)
-enum Color {
-    WHITE
-    BLACK
-    SILVER
-    BLUE
-    OTHER
-}
-
-enum Size {
-    SMALL
-    MEDIUM
-    LARGE
-}
-
-' מחלקות (Classes)
-
-class ParkWiseSystem {
-    ' מחלקה ראשית המנהלת את המערכת והדוחות
-    + generateAnnualSummaryReport(year: int): Report
-    + generateClubGrowthReport(year: int): Report
-}
-
-class ParkingLot {
-    - lotID: int
-    - name: String
-    - address: String
-    - city: String
-    - currentAvailableSpaces: int
-    ' פעולות עזר לחישוב נתונים עבור הדוח השנתי ברמת החניון
-    + getTotalIncome(year: int): double
-    + getOtherColorCount(year: int): int
-}
-
-class Client {
-    - clientID: int
-    - firstName: String
-    - lastName: String
-    - phoneNumber: String
-    - isClubMember: boolean
-    - memberSince: Date
-    + registerToClub(): void
-    + addPreferredLot(lot: ParkingLot): void
-}
-
-class Vehicle {
-    - vehicleNumber: String
-    - type: String
-    - weight: double
-    - vehiclePhotos: List<Image>
-    - color: Color
-    - size: Size
-}
-
-class ParkingSpace {
-    - spaceID: int
-    - floor: int
-    - x_coordinate: int
-    - y_coordinate: int
-    - size: Size
-}
-
-class Conveyor {
-    - conveyorID: int
-    - maxWeightCapacity: double
-}
-
-class ParkingSession {
-    ' מחלקה מקשרת המתעדת היסטוריית חניות
-    - sessionID: int
-    - startTime: DateTime
-    - endTime: DateTime
-    - finalAmount: double
-    + calculateCost(): double
-}
-
-class PriceList {
-    - year: int
-    - firstHourPrice: double
-    - extraHourPrice: double
-    - fullDayPrice: double
-}
-
-class GateSensor {
-    + scanVehicle(): VehicleData
-    + openBarrier(): void
-}
-
-class ConveyorsController {
-    + findNearestVacantSpace(size: Size): ParkingSpace
-    + assignConveyor(vehicleWeight: double): Conveyor
-}
-
-' קשרים (Relationships)
-
-' המערכת מורכבת מחניונים רבים
-ParkWiseSystem "1" o-- "*" ParkingLot
-
-' לקוח יכול להחזיק מספר רכבים, רכב שייך ללקוח אחד
-Client "1" -- "*" Vehicle : owns >
-
-' העדפות לקוח - קשר רבים לרבים
-Client "*" -- "*" ParkingLot : prefers >
-
-' מבנה החניון
-ParkingLot "1" *-- "*" ParkingSpace : contains >
-ParkingLot "1" *-- "*" Conveyor : has >
-ParkingLot "1" *-- "*" GateSensor : has >
-
-' ניהול מחירים - חניון מחזיק היסטוריית מחירונים
-ParkingLot "1" -- "*" PriceList : defines >
-
-' סשן חניה מקשר בין רכב לחניון
-ParkingSession "*" --> "1" Vehicle : concerns >
-ParkingSession "*" --> "1" ParkingLot : located at >
-ParkingSession "*" --> "1" PriceList : based on >
-
-' שימוש בבקרים
-ParkingLot "1" -- "1" ConveyorsController : uses >
-
 @enduml
