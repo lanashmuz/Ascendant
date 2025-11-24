@@ -1,0 +1,131 @@
+@startuml
+
+' הגדרות עיצוב בסיסיות
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor White
+    ArrowColor Black
+    BorderColor Black
+}
+
+' רשימות בחירה (Enums)
+enum Color {
+    WHITE
+    BLACK
+    SILVER
+    BLUE
+    OTHER
+}
+
+enum Size {
+    SMALL
+    MEDIUM
+    LARGE
+}
+
+' מחלקות (Classes)
+
+class ParkWiseSystem {
+    ' מחלקה ראשית המנהלת את המערכת והדוחות
+    + generateAnnualSummaryReport(year: int): Report
+    + generateClubGrowthReport(year: int): Report
+}
+
+class ParkingLot {
+    - lotID: int
+    - name: String
+    - address: String
+    - city: String
+    - currentAvailableSpaces: int
+    ' פעולות עזר לחישוב נתונים עבור הדוח השנתי ברמת החניון
+    + getTotalIncome(year: int): double
+    + getOtherColorCount(year: int): int
+}
+
+class Client {
+    - clientID: int
+    - firstName: String
+    - lastName: String
+    - phoneNumber: String
+    - isClubMember: boolean
+    - memberSince: Date
+    + registerToClub(): void
+    + addPreferredLot(lot: ParkingLot): void
+}
+
+class Vehicle {
+    - vehicleNumber: String
+    - type: String
+    - weight: double
+    - vehiclePhotos: List<Image>
+    - color: Color
+    - size: Size
+}
+
+class ParkingSpace {
+    - spaceID: int
+    - floor: int
+    - x_coordinate: int
+    - y_coordinate: int
+    - size: Size
+}
+
+class Conveyor {
+    - conveyorID: int
+    - maxWeightCapacity: double
+}
+
+class ParkingSession {
+    ' מחלקה מקשרת המתעדת היסטוריית חניות
+    - sessionID: int
+    - startTime: DateTime
+    - endTime: DateTime
+    - finalAmount: double
+    + calculateCost(): double
+}
+
+class PriceList {
+    - year: int
+    - firstHourPrice: double
+    - extraHourPrice: double
+    - fullDayPrice: double
+}
+
+class GateSensor {
+    + scanVehicle(): VehicleData
+    + openBarrier(): void
+}
+
+class ConveyorsController {
+    + findNearestVacantSpace(size: Size): ParkingSpace
+    + assignConveyor(vehicleWeight: double): Conveyor
+}
+
+' קשרים (Relationships)
+
+' המערכת מורכבת מחניונים רבים
+ParkWiseSystem "1" o-- "*" ParkingLot
+
+' לקוח יכול להחזיק מספר רכבים, רכב שייך ללקוח אחד
+Client "1" -- "*" Vehicle : owns >
+
+' העדפות לקוח - קשר רבים לרבים
+Client "*" -- "*" ParkingLot : prefers >
+
+' מבנה החניון
+ParkingLot "1" *-- "*" ParkingSpace : contains >
+ParkingLot "1" *-- "*" Conveyor : has >
+ParkingLot "1" *-- "*" GateSensor : has >
+
+' ניהול מחירים - חניון מחזיק היסטוריית מחירונים
+ParkingLot "1" -- "*" PriceList : defines >
+
+' סשן חניה מקשר בין רכב לחניון
+ParkingSession "*" --> "1" Vehicle : concerns >
+ParkingSession "*" --> "1" ParkingLot : located at >
+ParkingSession "*" --> "1" PriceList : based on >
+
+' שימוש בבקרים
+ParkingLot "1" -- "1" ConveyorsController : uses >
+
+@enduml
