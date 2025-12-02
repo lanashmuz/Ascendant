@@ -1,5 +1,4 @@
 @startuml
-
 ' Layout and Styling Settings
 skinparam linetype ortho
 skinparam nodesep 150
@@ -19,6 +18,14 @@ skinparam class {
 class "ParkWiseSystem" as System {
     + generateAnnualSummaryReport()
     + generateClubGrowthReport()
+}
+
+class "Administrator" as Administrator {
+    - adminID
+    - name
+    + updateParkingLotDetails(lotID)
+    + requestAnnualReport()
+    + requestClubGrowthReport()
 }
 
 class "ParkingLot" as ParkingLot {
@@ -99,6 +106,7 @@ class "Color" as EnumColor <<enumeration>> {
 ' ---------------------------------------------------------
 System -[hidden]down- ParkingLot
 System -[hidden]down- Client
+Administrator -[hidden]right- System 
 Client -[hidden]right- ParkingLot
 
 ParkingLot -[hidden]down- ParkingSpace
@@ -113,6 +121,10 @@ GateSensor -[hidden]right- PriceList
 ' System Composition
 System "1" *-- "*" Client
 System "1" *-- "*" ParkingLot
+
+' Administrator Relationships
+Administrator "1" -- "*" ParkingLot : manages/updates >
+Administrator ..> System : generates reports >
 
 ' Client & Vehicle
 Client "1" -left- "*" Vehicle : owns >
@@ -136,5 +148,4 @@ ParkingSession ..> PriceList : based on >
 
 ' Client Preferences
 Client "*" .right. "*" ParkingLot : < prefers
-
 @enduml
