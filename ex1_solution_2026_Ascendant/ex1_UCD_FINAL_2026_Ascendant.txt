@@ -2,7 +2,6 @@
 left to right direction
 skinparam packageStyle rectangle
 
-' Actors definitions
 actor "Client" as client
 actor "Administrator" as admin
 actor "Gate Sensor (GS)" as gs
@@ -22,7 +21,7 @@ rectangle "ParkWise System" {
     usecase "Open Barrier" as UC_OpenBarrier
     
     usecase "Register to System" as UC_Register
-    usecase "Upload Client Info" as UC_ClientInfo   
+    usecase "Upload Client Info" as UC_ClientInfo
     usecase "Upload Vehicle Photos" as UC_UploadPhotos
     usecase "Extract Vehicle Details" as UC_ExtractDetails
 
@@ -31,11 +30,15 @@ rectangle "ParkWise System" {
     usecase "Park Vehicle" as UC_ParkVehicle
     usecase "Send Parking SMS" as UC_SMS
 
-    ' Exit & Payment Process
+    ' --- כאן נמצאת הצפייה במידע (Viewing Info) ---
+    usecase "View Parking Details" as UC_ViewDetails
     usecase "End Parking Session" as UC_EndParking
+    usecase "Verify Phone Number" as UC_VerifyPhone
+
+    ' Payment & Receipt Process
     usecase "Calculate Payment" as UC_CalcPay
     usecase "Process Payment" as UC_ProcessPay
-    usecase "Issue Receipt" as UC_Receipt
+    usecase "Issue Receipt" as UC_Receipt  
 
     ' Club Management
     usecase "Register to Club" as UC_JoinClub
@@ -52,7 +55,7 @@ rectangle "ParkWise System" {
     UC_DetectArrival <.. UC_Register : <<extend>>
     
     client --> UC_Register
-    UC_Register ..> UC_ClientInfo : <<include>>    
+    UC_Register ..> UC_ClientInfo : <<include>>
     UC_Register ..> UC_UploadPhotos : <<include>>
     UC_UploadPhotos ..> UC_ExtractDetails : <<include>>
     
@@ -60,13 +63,22 @@ rectangle "ParkWise System" {
     cc --> UC_ParkVehicle
     UC_ParkVehicle ..> UC_SMS : <<include>>
 
+    ' --- Client Viewing ---
+    client --> UC_ViewDetails
+    UC_ViewDetails ..> UC_VerifyPhone : <<include>>
+
+    ' --- Client Exit ---
     client --> UC_EndParking
     cc --> UC_EndParking
-
+    
+    UC_EndParking ..> UC_VerifyPhone : <<include>>
     UC_EndParking ..> UC_CalcPay : <<include>>
     UC_EndParking ..> UC_ProcessPay : <<include>>
+    
     UC_ProcessPay --> pg
-    UC_ProcessPay ..> UC_Receipt : <<extend>>
+    ' --- כאן נמצאת הבקשה לקבלה (Requesting Receipt) ---
+    ' זה Extend כי זה קורה רק אם הלקוח מבקש
+    UC_ProcessPay ..> UC_Receipt : <<extend>> 
     UC_ProcessPay ..> UC_OpenBarrier : <<include>>
 
     client --> UC_JoinClub
