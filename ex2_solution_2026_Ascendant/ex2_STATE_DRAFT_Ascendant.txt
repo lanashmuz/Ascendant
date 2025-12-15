@@ -1,0 +1,81 @@
+@startuml
+title State Chart: Conveyor System Lifecycle
+skinparam StateBackgroundColor #FEFEFE
+skinparam StateBorderColor #333333
+skinparam StateFontName Arial
+
+' Initial State
+[*] --> Off
+
+state Off {
+    ' Configuration while off
+    Off : entry / enableConfiguration()
+    Off : event / weightConfigConfirmed
+}
+
+' Transition to start the day
+Off --> IntegrityChecks : turnOnConveyors / attemptCount = 0
+
+' COMPOSITE STATE: Integrity Checks
+state IntegrityChecks {
+    ' Deep History to remember where we paused
+    state "History" as H <<history*>>
+    
+    ' Entering checks resets timer context conceptually
+    
+    state "Mechanical Check" as Mechanical {
+        [*] --> BeltCheck
+        BeltCheck --> ObstructionCheck : proper tension
+        ObstructionCheck --> RollerCheck : clear path
+        RollerCheck --> MechDone : free rotation
+        state MechDone <<join>>
+    }
+    
+    --
+    
+    state "Electronic Check" as Electronic {
+        [*] --> SensorCheck
+        SensorCheck --> CommsCheck : sensors OK
+        CommsCheck --> ElecDone : stable connection
+        state ElecDone <<join>>
+    }
+}
+
+' Logic for Timeout and Retries (The 10 min constraint)
+IntegrityChecks --> IntegrityChecks : after(10 min) [attemptCount < 3] / attemptCount++
+IntegrityChecks --> Pause : after(10 min) [attemptCount == 3] / sendAlert()
+
+' Logic for Component Failure
+IntegrityChecks --> Pause : mechanicalCheckError / sendAlert()
+IntegrityChecks --> Pause : electronicCheckError / sendAlert()
+
+' Success Transition
+IntegrityChecks --> Ready : [Mechanical.MechDone && Electronic.ElecDone]
+
+' PAUSE STATE
+state Pause {
+    Pause : entry / stopConveyor()
+    ' Wait for repair
+}
+
+' Administrator repairs and restarts -> Returns to History
+Pause --> IntegrityChecks : restartButton [resume tests]
+
+' OPERATIONAL STATES
+state Ready {
+    ' System is idle and ready for commands
+}
+
+state ExecutingCommand {
+    ExecutingCommand : entry / calculateRoute()
+    ExecutingCommand : do / moveVehicle()
+}
+
+' Command Execution Flow
+Ready --> ExecutingCommand : moveVehicleCommand
+ExecutingCommand --> Ready : routeCompleted
+
+' Shutdown (Only allowed from Ready, not while Executing)
+Ready --> Off : turnOffConveyors
+
+@enduml
