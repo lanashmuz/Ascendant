@@ -1,0 +1,89 @@
+@startuml
+scale 800 width
+hide empty description
+
+state Off {
+    ' Internal event for config confirmation
+    Off : event / weightConfigConfirmed
+    Off : entry / enableConfiguration()
+}
+
+state Pause : entry / stopConveyor()
+
+' --- Super-State to manage History and Global Pause logic ---
+state "Active System" as ActiveSystem {
+    
+    ' Deep History to remember exactly where we were (Checks, Ready, or Executing)
+    state "H*" as RestoreHistory 
+    
+    state IntegrityChecks {
+        state "Mechanical Check" as Mech {
+            state BeltCheck
+            state ObstructionCheck
+            state RollerCheck
+            
+            [*] --> BeltCheck
+            BeltCheck --> ObstructionCheck : proper tension
+            ObstructionCheck --> RollerCheck : clear path
+            RollerCheck --> [*] : free rotation
+            
+            ' Internal History for the checks specifically
+            state "H*" as MechHistory
+        }
+        
+        ||
+        
+        state "Electronic Check" as Elec {
+            state SensorCheck
+            state CommsCheck
+            
+            [*] --> SensorCheck
+            SensorCheck --> CommsCheck : sensors OK
+            CommsCheck --> [*] : stable connection
+        }
+    }
+
+    state Ready
+    
+    state ExecutingCommand {
+        ExecutingCommand : entry / calculateRoute()
+        ExecutingCommand : do / moveVehicle()
+    }
+
+    ' --- Transitions within Active System ---
+    [*] --> IntegrityChecks
+    
+    ' Successful checks lead to Ready
+    IntegrityChecks --> Ready : [Mechanical.Done && Electronic.Done]
+    
+    ' Operational Cycle
+    Ready --> ExecutingCommand : moveVehicleCommand
+    ExecutingCommand --> Ready : routeCompleted
+    
+    ' Retry logic (within 10 min)
+    IntegrityChecks --> IntegrityChecks : after(10 min) [attemptCount < 3] / attemptCount++
+}
+
+' --- Global Transitions ---
+
+' FIX 1: Added [weightConfigConfirmed] guard
+Off --> ActiveSystem : turnOnConveyors [weightConfigConfirmed] / attemptCount = 0
+
+' Timeout to Pause (3 failed attempts)
+IntegrityChecks --> Pause : after(10 min) [attemptCount == 3] / sendAlert()
+
+' Specific Check Errors to Pause
+IntegrityChecks --> Pause : mechanicalCheckError / sendAlert()
+IntegrityChecks --> Pause : electronicCheckError / sendAlert()
+
+' FIX 2: Pause capability during operation (Missing in original)
+Ready --> Pause : adminPause / stopConveyor()
+ExecutingCommand --> Pause : adminPause / stopConveyor()
+
+' FIX 3: Restart returns to History (Resume from where paused)
+Pause --> RestoreHistory : restartButton [resume operation]
+
+' Turn Off (only from Ready as per logic)
+Ready --> Off : turnOffConveyors
+
+@enduml
