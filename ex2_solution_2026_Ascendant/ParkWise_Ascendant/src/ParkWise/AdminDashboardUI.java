@@ -1,25 +1,41 @@
 package ParkWise;
 
+import java.util.List;
+
 public class AdminDashboardUI {
-	public class Main {
-	    public static void main(String[] args) {
-	        // 1. יצירת היישות (הדאטה)
-	        Conveyor myConveyor = new Conveyor(101, 1, 10, 20);
+    
+    private LotManagementController lotController;
+    private ConveyorController conveyorController;
 
-	        // 2. יצירת הבקר וחיבורו ליישות
-	        ConveyorController controller = new ConveyorController(myConveyor);
+    public AdminDashboardUI(LotManagementController lc, ConveyorController cc) {
+        this.lotController = lc;
+        this.conveyorController = cc;
+    }
 
-	        // --- סימולציה של פעולות משתמש (Boundary Actions) ---
-	        
-	        System.out.println("--- Scenario 1: Admin turns on the system ---");
-	        // המשתמש לוחץ על "Turn On" -> ה-UI קורא לקונטרולר
-	        controller.activateConveyors();
+    // --- Lot Management Methods ---
+    
+    public void updateLotDetails(int lotID, String name, String address, String city) {
+        System.out.println("[UI] User clicked 'Update Lot Details'");
+        lotController.setLotDetails(lotID, name, address, city);
+    }
 
-	        System.out.println("\n--- Scenario 2: Admin updates weight config ---");
-	        controller.updateMaxWeight(101, 500.0);
+    public void requestPriceHistory(int lotID) {
+        System.out.println("[UI] User requested Price History");
+        List<PriceList> history = lotController.getPriceHistory(lotID);
+        // הצגה למסך (הדמיה)
+        if (history != null) {
+            System.out.println("[UI] Displaying " + history.size() + " price records.");
+        }
+    }
 
-	        System.out.println("\n--- Scenario 3: Car arrives (System Operation) ---");
-	        controller.assignConveyor("Mazda 3");
-	    }
-	}
+    // --- Conveyor Methods (כפי שראינו קודם) ---
+    
+    public void turnOnConveyors() {
+        System.out.println("[UI] User clicked 'Turn On Conveyors'");
+        conveyorController.activateConveyors();
+    }
+    
+    public void setConveyorWeight(int conveyorID, double newWeight) {
+        conveyorController.updateMaxWeight(conveyorID, newWeight);
+    }
 }
