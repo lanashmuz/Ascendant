@@ -1,0 +1,113 @@
+@startuml
+
+' Style configuration for ECB Pattern
+skinparam classAttributeIconSize 0
+skinparam style strictuml
+skinparam note {
+    BackgroundColor #FEFECE
+    BorderColor #A80036
+}
+
+' --- BOUNDARY CLASSES ---
+class "AdminDashboardUI" <<Boundary>> {
+    + updateLotDetails(lotID: int, name: String, address: String, city: String)
+    + turnOnConveyors()
+    + turnOffConveyors()
+    + restartConveyor(conveyorID: int)
+    + setConveyorWeight(conveyorID: int, newWeight: double)
+    + requestPriceHistory(lotID: int)
+}
+
+class "IRSInterface" <<Boundary>> {
+    + receivePriceList(jsonParams: JSON)
+}
+
+' --- CONTROL CLASSES ---
+class "LotManagementController" <<Control>> {
+    + setLotDetails(lotID: int, name: String, address: String, city: String)
+    + importPriceList(json: JSON)
+    + getPriceHistory(lotID: int): List<PriceList>
+}
+
+class "ConveyorController" <<Control>> {
+    ' -- METHODS --
+    + runMechanicalCheck()
+    + activateConveyors()
+    + executeIntegrityChecks(conveyorID: int)
+    + handleCheckFailure(conveyorID: int)
+    + handleRepairComplete(conveyorID: int)
+    + updateMaxWeight(conveyorID: int, weight: double)
+    + assignConveyor(vehicleDetails: Vehicle): Conveyor
+}
+
+
+' --- ENTITY CLASSES ---
+class "ParkingLot" <<Entity>> {
+    - lotNumber: int
+    - name: String
+    - address: String
+    - city: String
+    - availableSpaces: int
+    + updateDetails(name: String, address: String, city: String)
+}
+
+class "PriceList" <<Entity>> {
+    - year: int
+    - effectiveDate: Date
+    - firstHourPrice: double
+    - additionalHourPrice: double
+    - fullDayPrice: double
+    + getPrices(): Map
+}
+
+class "Conveyor" <<Entity>> {
+    - conveyorID: int
+    - maxWeightCapacity: double
+    - status: ConveyorStatus
+    - failureCount: int
+    - integrityTimer: DateTime
+    - floor: int
+    - x_coord: int
+    - y_coord: int
+    
+    ' -- MOVED FIELDS --
+    - pendingMaxWeight: double
+    - isConfigurationConfirmed: boolean
+    - mechCheckPassed: boolean
+    - elecCheckPassed: boolean
+
+    ' -- METHODS --
+    + runMechanicalCheck(): boolean
+    + runElectronicCheck(): boolean
+    + setPauseMode()
+    + setWeight(weight: double)
+    + moveVehicle(route: Route)
+}
+
+enum ConveyorStatus <<Enumeration>> {
+        OFF
+        CHECKING_MECH
+        CHECKING_ELEC
+        OPERATIONAL
+        PAUSED_FAILURE
+        PAUSED_BUSY
+}
+
+' --- RELATIONSHIPS ---
+
+' Boundary to Control
+AdminDashboardUI ..> LotManagementController : uses
+AdminDashboardUI ..> ConveyorController : uses
+IRSInterface ..> LotManagementController : transmits data to
+
+' Control to Entity
+LotManagementController --> ParkingLot : manages
+LotManagementController --> PriceList : creates/reads
+ConveyorController --> Conveyor : controls
+
+' Entity Relationships
+ParkingLot "1" *-- "*" PriceList : maintains history
+ParkingLot "1" *-- "*" Conveyor : contains
+Conveyor ..> ConveyorStatus: uses
+
+@enduml
