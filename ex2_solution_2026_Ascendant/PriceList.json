@@ -1,0 +1,36 @@
+{
+  "priceLists": [
+    {
+      "priceListID": 1,
+      "yearAssociated": 2024,
+      "firstHour": 15.0,
+      "additionalHour": 5.0,
+      "extraHour": 3.0,
+      "fullDay": 60.0
+    },
+    {
+      "priceListID": 2,
+      "yearAssociated": 2025,
+      "firstHour": 20.0,
+      "additionalHour": 8.0,
+      "extraHour": 5.0,
+      "fullDay": 80.0
+    },
+    {
+      "priceListID": 3,
+      "yearAssociated": 2025,
+      "firstHour": 25.0,
+      "additionalHour": 10.0,
+      "extraHour": 8.0,
+      "fullDay": 100.0
+    },
+    {
+      "priceListID": 4,
+      "yearAssociated": 2026,
+      "firstHour": 30.0,
+      "additionalHour": 12.0,
+      "extraHour": 10.0,
+      "fullDay": 120.0
+    }
+  ]
+}
